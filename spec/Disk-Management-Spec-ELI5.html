@@ -1,0 +1,381 @@
+<!doctype html>
+<title>倉庫の日次点検</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ink: #2b2620;
+    --ink-muted: #6b6156;
+    --ink-faint: #9a9084;
+    --paper: #f6f1e8;
+    --surface: #ffffff;
+    --border: #e5dccb;
+    --border-strong: #d8cbb0;
+    --accent: #b3591f;
+    --accent-strong: #8f4416;
+    --accent-soft: #fbe9d7;
+    --accent2: #2f6f5e;
+    --accent2-soft: #e2f0ea;
+    --code-bg: #f1e9db;
+    --ok: #2f7d4f;
+    --ok-bg: #e7f3ec;
+    --warn: #a8720c;
+    --warn-bg: #fbf1de;
+    --crit: #b23b3b;
+    --crit-bg: #fbe9e8;
+    --ng: #83786a;
+    --ng-bg: #efe9dd;
+    --shadow: 0 1px 2px rgba(60,40,20,.06), 0 8px 24px rgba(60,40,20,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #f0e9df;
+      --ink-muted: #c4b8a6;
+      --ink-faint: #8a8072;
+      --paper: #1d1912;
+      --surface: #262019;
+      --border: #3a3125;
+      --border-strong: #4a3f30;
+      --accent: #e39355;
+      --accent-strong: #f0b17e;
+      --accent-soft: #33261a;
+      --accent2: #7cc4ac;
+      --accent2-soft: #1c2e27;
+      --code-bg: #241e16;
+      --ok: #7fce9b;
+      --ok-bg: #17281e;
+      --warn: #e3ac53;
+      --warn-bg: #2c2210;
+      --crit: #e58080;
+      --crit-bg: #2c1918;
+      --ng: #b3a894;
+      --ng-bg: #2a251d;
+      --shadow: 0 1px 2px rgba(0,0,0,.35), 0 8px 28px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #f0e9df;
+    --ink-muted: #c4b8a6;
+    --ink-faint: #8a8072;
+    --paper: #1d1912;
+    --surface: #262019;
+    --border: #3a3125;
+    --border-strong: #4a3f30;
+    --accent: #e39355;
+    --accent-strong: #f0b17e;
+    --accent-soft: #33261a;
+    --accent2: #7cc4ac;
+    --accent2-soft: #1c2e27;
+    --code-bg: #241e16;
+    --ok: #7fce9b;
+    --ok-bg: #17281e;
+    --warn: #e3ac53;
+    --warn-bg: #2c2210;
+    --crit: #e58080;
+    --crit-bg: #2c1918;
+    --ng: #b3a894;
+    --ng-bg: #2a251d;
+    --shadow: 0 1px 2px rgba(0,0,0,.35), 0 8px 28px rgba(0,0,0,.4);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Noto Sans JP", "Yu Gothic UI", sans-serif;
+    font-size: 15.5px;
+    line-height: 1.85;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 920px; margin: 0 auto; padding: 44px 26px 100px; }
+
+  header.hero {
+    background: linear-gradient(155deg, var(--accent-soft), transparent 70%);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 32px 30px;
+    margin-bottom: 34px;
+    box-shadow: var(--shadow);
+  }
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--accent-strong); font-weight: 600;
+  }
+  h1 {
+    font-family: "Zen Maru Gothic", sans-serif;
+    font-weight: 900;
+    font-size: clamp(26px, 4vw, 34px);
+    line-height: 1.4;
+    margin: 10px 0 14px;
+    text-wrap: balance;
+  }
+  .lede { color: var(--ink-muted); max-width: 62ch; font-size: 15.5px; }
+  .lede strong { color: var(--ink); }
+
+  .analogy-box {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 22px;
+    margin: 34px 0;
+    box-shadow: var(--shadow);
+  }
+  .analogy-box .icon {
+    flex-shrink: 0;
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: var(--accent2-soft);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .analogy-box .icon svg { width: 24px; height: 24px; stroke: var(--accent2); }
+  .analogy-box p { margin: 0; font-size: 14.5px; }
+  .analogy-box .lbl { font-family: "Zen Maru Gothic", sans-serif; font-weight: 700; color: var(--accent2); display: block; margin-bottom: 4px; font-size: 13.5px; }
+
+  section { margin-bottom: 46px; }
+  h2 {
+    font-family: "Zen Maru Gothic", sans-serif;
+    font-size: 21px; font-weight: 900;
+    display: flex; align-items: center; gap: 12px;
+    margin: 0 0 16px;
+  }
+  h2 .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    font-family: "JetBrains Mono", monospace; font-size: 15px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  h3 { font-family: "Zen Maru Gothic", sans-serif; font-size: 16px; font-weight: 700; margin: 22px 0 10px; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 14px; padding-left: 1.5em; }
+  li { margin-bottom: 6px; }
+  code {
+    font-family: "JetBrains Mono", monospace; font-size: .9em;
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: .1em .4em;
+  }
+  .path {
+    display: block; font-family: "JetBrains Mono", monospace; font-size: 12.5px;
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; margin: 8px 0 14px; overflow-x: auto; white-space: pre;
+  }
+
+  .warehouse-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin: 16px 0 20px;
+  }
+  .wh-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 14px 16px; box-shadow: var(--shadow); text-align: center;
+  }
+  .wh-card .wh-icon { font-size: 26px; margin-bottom: 6px; }
+  .wh-card .wh-name { font-family: "Zen Maru Gothic", sans-serif; font-weight: 700; font-size: 13.5px; }
+  .wh-card .wh-drives { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--ink-muted); margin-top: 4px; }
+  .wh-card.special { border: 2px dashed var(--accent); background: var(--accent-soft); }
+  .wh-card.special .wh-name { color: var(--accent-strong); }
+
+  .story-steps { display: flex; flex-direction: column; gap: 16px; margin: 18px 0 22px; }
+  .story-step {
+    display: flex; gap: 16px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 18px 20px; box-shadow: var(--shadow);
+  }
+  .story-step .badge {
+    flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%;
+    background: var(--accent2-soft); color: var(--accent2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: "Zen Maru Gothic", sans-serif; font-weight: 900; font-size: 16px;
+  }
+  .story-step h4 { margin: 0 0 6px; font-family: "Zen Maru Gothic", sans-serif; font-size: 15px; }
+  .story-step p { margin: 0; font-size: 13.8px; color: var(--ink-muted); }
+  .story-step .status-tag {
+    display: inline-block; margin-top: 8px; font-size: 11.5px; font-weight: 700;
+    padding: 2px 10px; border-radius: 100px;
+  }
+  .status-tag.done { background: var(--ok-bg); color: var(--ok); }
+  .status-tag.new { background: var(--accent-soft); color: var(--accent-strong); }
+
+  .callout {
+    border: 1px solid var(--border); border-left: 5px solid var(--crit);
+    background: var(--crit-bg); border-radius: 12px; padding: 16px 20px; margin: 18px 0;
+    font-size: 14px;
+  }
+  .callout .lbl { display: block; font-weight: 700; font-family: "Zen Maru Gothic", sans-serif; color: var(--crit); margin-bottom: 6px; }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout.info { border-left-color: var(--accent2); background: var(--accent2-soft); }
+  .callout.info .lbl { color: var(--accent2); }
+
+  .qa-list { display: flex; flex-direction: column; gap: 12px; }
+  .qa-item {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px 20px; box-shadow: var(--shadow);
+  }
+  .qa-item .q {
+    font-weight: 700; font-family: "Zen Maru Gothic", sans-serif; font-size: 14.5px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .qa-item .q .qtag {
+    flex-shrink: 0; font-family: "JetBrains Mono", monospace; font-size: 11px;
+    background: var(--accent); color: #fff; border-radius: 6px; padding: 2px 8px;
+  }
+  .qa-item .a { margin-top: 8px; font-size: 13.8px; color: var(--ink-muted); padding-left: 42px; }
+
+  .keyfacts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 14px; margin: 18px 0; }
+  .keyfact { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; box-shadow: var(--shadow); }
+  .keyfact .kf-label { font-size: 12px; color: var(--ink-faint); font-family: "Zen Maru Gothic", sans-serif; font-weight: 700; }
+  .keyfact .kf-value { font-family: "JetBrains Mono", monospace; font-size: 14px; margin-top: 4px; word-break: break-all; }
+
+  footer {
+    border-top: 1px solid var(--border); margin-top: 50px; padding-top: 20px;
+    font-size: 12.5px; color: var(--ink-faint);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+  a { color: var(--accent-strong); }
+  ::selection { background: var(--accent-soft); }
+
+  @media (max-width: 640px) {
+    .page { padding: 28px 16px 72px; }
+    .story-step { flex-direction: column; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="hero">
+    <div class="eyebrow">かんたん解説版</div>
+    <h1>「毎日、9つの倉庫を見回って<br>ノートに記録する」お話</h1>
+    <p class="lede">このツールがやることを、専門用語ぬきで説明します。難しく感じたら、この段落だけ覚えてください — <strong>「毎日、9台のサーバーの空き容量を自動で見に行って、会社のノート（Excel）に書き込んで、最後に見回りの報告書（HTML）を作る」</strong>、それだけです。</p>
+  </header>
+
+  <div class="analogy-box">
+    <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></div>
+    <p><span class="lbl">たとえ話のルール</span>「サーバー」は<strong>倉庫</strong>、「ディスクの空き容量」は<strong>倉庫の棚の空きスペース</strong>、「運用日誌のExcel」は<strong>毎日つける点検ノート</strong>、「認証情報（ID・パスワード）」は<strong>倉庫の鍵</strong>だと思って読んでください。</p>
+  </div>
+
+  <section id="warehouses">
+    <h2><span class="num">1</span>見回る倉庫は9つ</h2>
+    <p>会社には9つの倉庫（サーバー）があり、それぞれ棚（ドライブ）の数が違います。ほとんどの倉庫は棚が1〜2個、一番大きい倉庫（GMSV0002）は棚が3個あります。</p>
+    <div class="warehouse-grid">
+      <div class="wh-card"><div class="wh-icon">🏢</div><div class="wh-name">VMSV3001</div><div class="wh-drives">棚: C</div></div>
+      <div class="wh-card"><div class="wh-icon">🏢</div><div class="wh-name">GMSV0001</div><div class="wh-drives">棚: C</div></div>
+      <div class="wh-card"><div class="wh-icon">🏬</div><div class="wh-name">GMSV0002</div><div class="wh-drives">棚: C, D, E</div></div>
+      <div class="wh-card"><div class="wh-icon">🏢</div><div class="wh-name">GMSV0006</div><div class="wh-drives">棚: C, D</div></div>
+      <div class="wh-card"><div class="wh-icon">🏢</div><div class="wh-name">GMSV0008</div><div class="wh-drives">棚: C, D</div></div>
+      <div class="wh-card"><div class="wh-icon">🏢</div><div class="wh-name">GMSV0009</div><div class="wh-drives">棚: C, D</div></div>
+      <div class="wh-card"><div class="wh-icon">🏢</div><div class="wh-name">GMSV0011</div><div class="wh-drives">棚: C</div></div>
+      <div class="wh-card"><div class="wh-icon">🏢</div><div class="wh-name">GMSV0012</div><div class="wh-drives">棚: C, D</div></div>
+      <div class="wh-card special"><div class="wh-icon">🏚️</div><div class="wh-name">MAGNET<br>(離れの倉庫)</div><div class="wh-drives">棚: C</div></div>
+    </div>
+    <p>8つの倉庫は同じ「会社の合鍵（共通の鍵）」で開きますが、<strong>MAGNET だけは離れにあるので、別の専用の鍵</strong>を使います。この違いはとても重要なので、次の章で説明します。</p>
+  </section>
+
+  <section id="keys">
+    <h2><span class="num">2</span>鍵は2種類</h2>
+    <p style="color:var(--ink-faint); font-size:13px;">（鍵の番号（パスワード）はこの解説では伏字にしています。実際の番号はプログラムの中だけで管理します）</p>
+    <div class="keyfacts">
+      <div class="keyfact">
+        <div class="kf-label">会社の合鍵（8つの倉庫共通）</div>
+        <div class="kf-value">MIRAI\adminstrator<br>••••••••••••</div>
+      </div>
+      <div class="keyfact">
+        <div class="kf-label">離れ（MAGNET）専用の鍵</div>
+        <div class="kf-value">1\adminstrator<br>••••••••••••</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="daily-flow">
+    <h2><span class="num">3</span>1日の流れ（3幕構成）</h2>
+    <p>プログラムを実行すると、次の3つの場面が順番に起こります。</p>
+    <div class="story-steps">
+      <div class="story-step">
+        <div class="badge">朝</div>
+        <div>
+          <h4>見回り：9つの倉庫を1つずつ訪ねる</h4>
+          <p>まず「倉庫の扉は開くか（電話が通じるか＝導通確認）」を確認し、次に「棚にどれだけ空きがあるか（空き容量・全容量）」を数字で記録します。合計9つの倉庫、最大3つの棚まで、順番に見て回ります。</p>
+          <span class="status-tag done">仕組みはすでに完成ずみ</span>
+        </div>
+      </div>
+      <div class="story-step">
+        <div class="badge">昼</div>
+        <div>
+          <h4>ノート記入：会社のExcelノートに書き写す</h4>
+          <p>会社の共有フォルダにある「昨日のノート」をコピーして「今日のノート」を作り、表紙の日付を今日の日付に直し、棚の空き具合を書き写します（全体の広さは変わらないので確認だけ）。書き終わったら保存します。</p>
+          <span class="status-tag new">これから作る部分</span>
+        </div>
+      </div>
+      <div class="story-step">
+        <div class="badge">夕</div>
+        <div>
+          <h4>報告書づくり：見回りの結果を1枚にまとめる</h4>
+          <p>朝の見回り結果と、昼のノート記入がうまくいったかどうかを、1枚の表（HTML）にまとめて、フォルダの一番上に置きます。誰でもブラウザで開いて確認できます。</p>
+          <span class="status-tag new">昼の結果も追加で載せる</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="notebook-detail">
+    <h2><span class="num">4</span>「昼：ノート記入」をもう少し詳しく</h2>
+    <p>ノート（Excel）が置いてある場所はここです。</p>
+    <span class="path">\\gmsv0002\006情シスs\04.共通管理\00.システム運用日誌\{今年度}\{今月}</span>
+    <ol>
+      <li>このフォルダに、<strong>昨日の日付</strong>のノート（<code>システム運用日誌_YYYYMMDD.xlsm</code>）があるか確認する。無ければ、そこで作業を止めて「昨日のノートが見つからなかった」と報告する。</li>
+      <li>昨日のノートを<strong>コピーして、今日の日付の名前</strong>に変える（これが今日使うノート）。</li>
+      <li>ノートの表紙（MENUシート）にある2つの日付マス（D10・E10）を確認し、ずれていたら直す。</li>
+      <li>ノートの点検表（サーバー管理日誌(統合)シート）にある「棚の空き具合」の欄を、今日測った数字に書き換える。「棚全体の広さ」の欄はそのままにして、数字が変わっていないかだけ確認する。</li>
+      <li>最後にノートを上書き保存する。昨日のノートは消さずに残しておく。</li>
+    </ol>
+  </section>
+
+  <section id="open-questions">
+    <h2><span class="num">5</span>作る前に、確認させてほしいこと</h2>
+    <p>指示だけでは決めきれない、または実物を見ないと分からない点が7つあります。</p>
+    <div class="qa-list">
+      <div class="qa-item">
+        <div class="q"><span class="qtag">1</span>「adminstrator」は本当にこの綴りですか？</div>
+        <div class="a">頂いた文面は <code>adminstrator</code>（"i" が1つ足りない綴り）でしたが、以前作ったプログラムでは正しい綴りの <code>administrator</code> で実際にログインできています。特に指定がなければ、動作実績のある正しい綴りを使うつもりです。</div>
+      </div>
+      <div class="qa-item">
+        <div class="q"><span class="qtag">2</span>離れ（MAGNET）の鍵の「1\」は何を指しますか？</div>
+        <div class="a">通常この位置には「その倉庫自身の名前」か、「そこだけの鍵ですよ」という印（ピリオド）が入ります。「1」という数字が何を意味するのか確認したいです。</div>
+      </div>
+      <div class="qa-item">
+        <div class="q"><span class="qtag">3</span>「コピペして最新ファイル名とする」の対象は？</div>
+        <div class="a">今回は「昨日のノートそのものをコピーする」と解釈しました。もし「サーバー管理日誌(統合)」という名前の、コピー元専用の見本ノートが別に存在するなら、教えてください。</div>
+      </div>
+      <div class="qa-item">
+        <div class="q"><span class="qtag">4</span>ノートの中の点検表、実際の書式が見たいです</div>
+        <div class="a">どの倉庫・どの棚の数字を、点検表の何行目・何列目に書けばよいかは、実物のノートを見ないと分かりません。作業前に一度、実物ファイルを見せてもらえると確実です。</div>
+      </div>
+      <div class="qa-item">
+        <div class="q"><span class="qtag">5</span>「棚全体の広さ」の欄、数字がずれていたら直しますか？</div>
+        <div class="a">基本は「変わらないはずの数字」として確認するだけにする予定ですが、もし実測値とずれていた場合に書き換えるべきかどうか、方針を確認したいです。</div>
+      </div>
+      <div class="qa-item">
+        <div class="q"><span class="qtag">6</span>昨日のノートは消してよいですか？</div>
+        <div class="a">今日のノートを作った後、昨日のノートは残したままにする予定です（消さない）。この認識で合っていますか？</div>
+      </div>
+      <div class="qa-item">
+        <div class="q"><span class="qtag">7</span>実行するパソコンに Excel は入っていますか？</div>
+        <div class="a">「昼：ノート記入」は、そのパソコンに入っている Microsoft Excel を裏側で操作して行います。実行するパソコンに Excel がインストールされている前提で作って良いか確認したいです。</div>
+      </div>
+    </div>
+    <div class="callout info">
+      <span class="lbl">この解説は「かんたん版」です</span>
+      <p>技術的な詳細（実行コマンド、エラー時の細かい挙動、ファイル構成など）は、同じフォルダにある詳細仕様書（<code>Disk-Management-Spec.html</code>）にまとめてあります。実装はこの7つの確認が済んでから進めます。</p>
+    </div>
+  </section>
+
+  <footer>
+    <span>ディスク容量管理運用表 かんたん解説 &middot; Server-Disk-Management</span>
+    <span>詳しい版: Disk-Management-Spec.html</span>
+  </footer>
+
+</div>
