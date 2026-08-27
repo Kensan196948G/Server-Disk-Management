@@ -1,0 +1,575 @@
+<!doctype html>
+<title>ディスク容量管理運用表 仕様書</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ink: #1c2430;
+    --ink-muted: #55606e;
+    --ink-faint: #8b94a0;
+    --paper: #f2f3ef;
+    --surface: #ffffff;
+    --surface-raised: #ffffff;
+    --border: #d9dcd3;
+    --border-strong: #c3c8bd;
+    --accent: #2c4a63;
+    --accent-strong: #1d3347;
+    --accent-soft: #e6edf1;
+    --code-bg: #eef0eb;
+    --ok: #2f7d4f;
+    --ok-bg: #e7f3ec;
+    --warn: #a8720c;
+    --warn-bg: #fbf1de;
+    --crit: #b23b3b;
+    --crit-bg: #fbe9e8;
+    --ng: #6b7280;
+    --ng-bg: #eceeed;
+    --shadow: 0 1px 2px rgba(28,36,48,.06), 0 6px 20px rgba(28,36,48,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #e7eaf0;
+      --ink-muted: #a7b0bd;
+      --ink-faint: #6d7583;
+      --paper: #14181f;
+      --surface: #1b202a;
+      --surface-raised: #202632;
+      --border: #2c3341;
+      --border-strong: #3a4152;
+      --accent: #7ea6c9;
+      --accent-strong: #a9c7e2;
+      --accent-soft: #202c38;
+      --code-bg: #1a2029;
+      --ok: #6ec78e;
+      --ok-bg: #16261d;
+      --warn: #e0ac4c;
+      --warn-bg: #2c2210;
+      --crit: #e58080;
+      --crit-bg: #2c1918;
+      --ng: #98a1ad;
+      --ng-bg: #232830;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #e7eaf0;
+    --ink-muted: #a7b0bd;
+    --ink-faint: #6d7583;
+    --paper: #14181f;
+    --surface: #1b202a;
+    --surface-raised: #202632;
+    --border: #2c3341;
+    --border-strong: #3a4152;
+    --accent: #7ea6c9;
+    --accent-strong: #a9c7e2;
+    --accent-soft: #202c38;
+    --code-bg: #1a2029;
+    --ok: #6ec78e;
+    --ok-bg: #16261d;
+    --warn: #e0ac4c;
+    --warn-bg: #2c2210;
+    --crit: #e58080;
+    --crit-bg: #2c1918;
+    --ng: #98a1ad;
+    --ng-bg: #232830;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 24px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Noto Sans JP", "Yu Gothic UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 48px 28px 96px;
+  }
+  header.hero {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 28px;
+    margin-bottom: 32px;
+  }
+  .eyebrow {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    letter-spacing: .12em;
+    color: var(--accent);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  h1 {
+    font-family: "Zen Kaku Gothic New", sans-serif;
+    font-weight: 900;
+    font-size: clamp(28px, 4vw, 38px);
+    line-height: 1.3;
+    margin: 10px 0 12px;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+  .lede { color: var(--ink-muted); font-size: 15.5px; max-width: 68ch; }
+  .metabar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    margin-top: 22px;
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  .metabar b { color: var(--ink); font-weight: 600; }
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 11px;
+    border-radius: 100px;
+    background: var(--warn-bg);
+    color: var(--warn);
+    font-weight: 600;
+    font-size: 12.5px;
+  }
+  .status-chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  nav.toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 40px;
+    box-shadow: var(--shadow);
+  }
+  nav.toc h2 {
+    font-family: "Zen Kaku Gothic New", sans-serif;
+    font-size: 13px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 12px;
+  }
+  nav.toc ol { columns: 2; column-gap: 28px; margin: 0; padding-left: 1.3em; }
+  nav.toc li { break-inside: avoid; margin-bottom: 6px; font-size: 13.5px; }
+  nav.toc a { color: var(--ink); text-decoration: none; border-bottom: 1px solid transparent; }
+  nav.toc a:hover { border-color: var(--accent); color: var(--accent); }
+
+  section { margin-bottom: 44px; scroll-margin-top: 20px; }
+  h2 {
+    font-family: "Zen Kaku Gothic New", sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 0 6px;
+    padding-left: 14px;
+    border-left: 4px solid var(--accent);
+    line-height: 1.4;
+  }
+  .section-num {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--accent);
+    font-weight: 600;
+    margin-right: 8px;
+  }
+  h3 {
+    font-family: "Zen Kaku Gothic New", sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    margin: 26px 0 10px;
+    color: var(--ink);
+  }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 14px; padding-left: 1.4em; }
+  li { margin-bottom: 5px; }
+  strong { font-weight: 700; }
+  code, .mono {
+    font-family: "JetBrains Mono", monospace;
+    font-size: .92em;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: .1em .42em;
+  }
+  .path {
+    display: block;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 10px 0 14px;
+    overflow-x: auto;
+    white-space: pre;
+    color: var(--ink);
+  }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); margin: 14px 0 20px; }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; background: var(--surface); font-size: 13.5px; }
+  th, td { padding: 9px 14px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  thead th {
+    background: var(--accent-soft);
+    color: var(--ink);
+    font-family: "Zen Kaku Gothic New", sans-serif;
+    font-weight: 700;
+    font-size: 12.5px;
+    letter-spacing: .02em;
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--accent-soft); }
+  td.num, th.num { font-family: "JetBrains Mono", monospace; text-align: right; white-space: nowrap; }
+  td.center { text-align: center; }
+
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 100px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .pill-a { background: var(--accent-soft); color: var(--accent-strong); }
+  .pill-ok { background: var(--ok-bg); color: var(--ok); }
+  .pill-warn { background: var(--warn-bg); color: var(--warn); }
+  .pill-crit { background: var(--crit-bg); color: var(--crit); }
+  .pill-ng { background: var(--ng-bg); color: var(--ng); }
+
+  .flow {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    margin: 18px 0 22px;
+  }
+  .flow-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+  .flow-card .step-no {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 700;
+    letter-spacing: .06em;
+  }
+  .flow-card h4 { margin: 6px 0 6px; font-size: 14.5px; font-family: "Zen Kaku Gothic New", sans-serif; }
+  .flow-card p { font-size: 13px; color: var(--ink-muted); margin: 0; }
+  .flow-card.done::after {
+    content: "実装済";
+    position: absolute; top: 14px; right: 14px;
+    font-size: 10.5px; font-weight: 700; color: var(--ok);
+    background: var(--ok-bg); padding: 2px 8px; border-radius: 100px;
+  }
+  .flow-card.new::after {
+    content: "新規";
+    position: absolute; top: 14px; right: 14px;
+    font-size: 10.5px; font-weight: 700; color: var(--accent-strong);
+    background: var(--accent-soft); padding: 2px 8px; border-radius: 100px;
+  }
+
+  .callout {
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--warn);
+    background: var(--warn-bg);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 13.8px;
+  }
+  .callout.crit { border-left-color: var(--crit); background: var(--crit-bg); }
+  .callout.info { border-left-color: var(--accent); background: var(--accent-soft); }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout .lbl { display: block; font-weight: 700; font-family: "Zen Kaku Gothic New", sans-serif; margin-bottom: 4px; }
+  .callout.crit .lbl { color: var(--crit); }
+  .callout.info .lbl { color: var(--accent-strong); }
+  .callout:not(.crit):not(.info) .lbl { color: var(--warn); }
+
+  .qa-list { display: flex; flex-direction: column; gap: 10px; }
+  .qa-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    box-shadow: var(--shadow);
+  }
+  .qa-item .q { font-weight: 700; font-family: "Zen Kaku Gothic New", sans-serif; font-size: 14px; display: flex; gap: 10px; }
+  .qa-item .q .qtag {
+    flex-shrink: 0;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 11px;
+    background: var(--accent);
+    color: var(--surface);
+    border-radius: 5px;
+    padding: 1px 7px;
+    height: fit-content;
+  }
+  .qa-item .a { margin-top: 6px; font-size: 13.5px; color: var(--ink-muted); padding-left: 34px; }
+
+  footer {
+    border-top: 1px solid var(--border);
+    margin-top: 56px;
+    padding-top: 20px;
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  ::selection { background: var(--accent-soft); }
+  a { color: var(--accent-strong); }
+
+  @media (max-width: 640px) {
+    nav.toc ol { columns: 1; }
+    .page { padding: 32px 16px 64px; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="hero">
+    <div class="eyebrow">仕様書 &middot; SPEC-DOC v1.0</div>
+    <h1>ディスク容量管理運用表<br>自動作成ツール 仕様書</h1>
+    <p class="lede">対象9台のサーバー／機器について、導通確認とディスク空き容量を毎日自動取得し、社内共有の「システム運用日誌」Excelブックへ転記したうえで、結果をHTMLレポートとして記録するための仕様。</p>
+    <div class="metabar">
+      <span><b>対象リポジトリ:</b> C:\temp\Server-Disk-Management</span>
+      <span><b>実行方式:</b> バッチ(管理者権限) + PowerShell 5.1 (Bypass)</span>
+      <span class="status-chip">要確認事項あり — 9章参照</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <h2>目次</h2>
+    <ol>
+      <li><a href="#s1">全体像と現状</a></li>
+      <li><a href="#s2">対象機器・ドライブ構成</a></li>
+      <li><a href="#s3">認証情報</a></li>
+      <li><a href="#s4">Phase 1: 導通確認・容量取得</a></li>
+      <li><a href="#s5">Phase 2: Excel運用日誌への転記</a></li>
+      <li><a href="#s6">Phase 3: 最終HTMLレポート</a></li>
+      <li><a href="#s7">実行環境・前提条件</a></li>
+      <li><a href="#s8">エラーハンドリング方針</a></li>
+      <li><a href="#s9">要確認事項</a></li>
+      <li><a href="#s10">ファイル構成</a></li>
+    </ol>
+  </nav>
+
+  <section id="s1">
+    <h2><span class="section-num">01</span>全体像と現状</h2>
+    <p>本ツールは <code>Disk-Management.bat</code> をダブルクリックすることで開始し、管理者権限が無ければ UAC で自動昇格したうえで <code>Disk-Management.ps1</code> を <code>-ExecutionPolicy Bypass</code> で実行する。処理は3つの Phase から成る。</p>
+    <div class="flow">
+      <div class="flow-card done">
+        <div class="step-no">PHASE 1</div>
+        <h4>導通確認・容量取得</h4>
+        <p>対象9台に ping と WMI/WinRM で接続し、ドライブ毎の空き容量・全容量を取得する。<strong>実装済み・稼働実績あり。</strong></p>
+      </div>
+      <div class="flow-card new">
+        <div class="step-no">PHASE 2</div>
+        <h4>運用日誌への転記</h4>
+        <p>共有フォルダ上の Excel ブックをコピーし、MENU シートの日付と容量シートの数値を更新して保存する。<strong>本仕様書で新規に定義。</strong></p>
+      </div>
+      <div class="flow-card new">
+        <div class="step-no">PHASE 3</div>
+        <h4>結果HTMLレポート</h4>
+        <p>Phase 1・2 双方の結果を1枚のHTMLにまとめ、ルートフォルダ直下に保存する。<strong>出力先・命名は既存仕様を継続、内容をPhase 2の結果まで拡張。</strong></p>
+      </div>
+    </div>
+    <div class="callout info">
+      <span class="lbl">現状の実装範囲</span>
+      <p>Phase 1 相当（導通確認・容量取得・簡易HTMLレポート）は既に <code>Disk-Management.ps1</code> として実装され、直近の実行結果 <code>Disk-Management-202608241335.HTML</code> が存在する。本仕様書は、これに Phase 2（Excel転記）を追加するための仕様を定める。</p>
+    </div>
+  </section>
+
+  <section id="s2">
+    <h2><span class="section-num">02</span>対象機器・ドライブ構成</h2>
+    <p>対象は全9台。ドライブレターは C のみの機器と、C・D（・E）を持つ機器が混在する。</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>No.</th><th>機器名</th><th>接続先</th><th>対象ドライブ</th><th>認証グループ</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td>VMSV3001</td><td class="mono">VMSV3001</td><td class="center">C</td><td><span class="pill pill-a">グループA</span></td></tr>
+          <tr><td class="num">2</td><td>GMSV0001</td><td class="mono">GMSV0001</td><td class="center">C</td><td><span class="pill pill-a">グループA</span></td></tr>
+          <tr><td class="num">3</td><td>GMSV0002</td><td class="mono">GMSV0002</td><td class="center">C, D, E</td><td><span class="pill pill-a">グループA</span></td></tr>
+          <tr><td class="num">4</td><td>GMSV0006</td><td class="mono">GMSV0006</td><td class="center">C, D</td><td><span class="pill pill-a">グループA</span></td></tr>
+          <tr><td class="num">5</td><td>GMSV0008</td><td class="mono">GMSV0008</td><td class="center">C, D</td><td><span class="pill pill-a">グループA</span></td></tr>
+          <tr><td class="num">6</td><td>GMSV0009</td><td class="mono">GMSV0009</td><td class="center">C, D</td><td><span class="pill pill-a">グループA</span></td></tr>
+          <tr><td class="num">7</td><td>GMSV0011</td><td class="mono">GMSV0011</td><td class="center">C</td><td><span class="pill pill-a">グループA</span></td></tr>
+          <tr><td class="num">8</td><td>GMSV0012</td><td class="mono">GMSV0012</td><td class="center">C, D</td><td><span class="pill pill-a">グループA</span></td></tr>
+          <tr><td class="num">9</td><td>MAGNET.mirai.local</td><td class="mono">192.168.245.5</td><td class="center">C</td><td><span class="pill pill-warn">グループB</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>この構成は既存 <code>Disk-Management.ps1</code> の <code>$Targets</code> と同一であり、変更なし。</p>
+  </section>
+
+  <section id="s3">
+    <h2><span class="section-num">03</span>認証情報</h2>
+    <p>2つの認証グループを用いる。グループBは MAGNET.mirai.local 専用で、グループAとは異なるアカウント体系・パスワードを持つ。<span style="color:var(--ink-faint);">（パスワードは本書では伏字表示。実際の値はスクリプト内でのみ保持する）</span></p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>グループ</th><th>対象機器</th><th>ユーザー (指示原文)</th><th>パスワード (指示原文)</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill pill-a">グループA</span></td><td>VMSV3001 / GMSV0001 / 0002 / 0006 / 0008 / 0009 / 0011 / 0012（8台共通）</td><td class="mono">MIRAI\adminstrator</td><td class="mono">••••••••••••</td></tr>
+          <tr><td><span class="pill pill-warn">グループB</span></td><td>MAGNET.mirai.local（1台のみ）</td><td class="mono">1\adminstrator</td><td class="mono">••••••••••••</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>アカウント名表記（<code>adminstrator</code>）については <a href="#s9">9章 要確認事項</a> を参照。</p>
+  </section>
+
+  <section id="s4">
+    <h2><span class="section-num">04</span>Phase 1: 導通確認・容量取得<span class="pill pill-ok" style="margin-left:10px;">実装済み</span></h2>
+    <p>既存 <code>Disk-Management.ps1</code> がそのまま担う部分。変更は無く、Phase 2 の入力データとして利用する。</p>
+    <h3>4.1 導通確認</h3>
+    <ul>
+      <li>対象への ping を規定回数（既定2回）実施し、1回でも応答があれば「導通OK」とする。</li>
+      <li>導通NGでも、WMI/WinRM 経由で容量取得を試行する（ping はブロックされるがWMIは通る環境があるため）。</li>
+    </ul>
+    <h3>4.2 容量取得</h3>
+    <ul>
+      <li>1次経路: <code>Get-WmiObject</code>（DCOM, PacketPrivacy 認証）で <code>Win32_LogicalDisk</code> を取得。</li>
+      <li>2次経路: WinRM (CIM/WSMan) へフォールバック。ただし<strong>認証エラー時はフォールバックしない</strong>（ロックアウト防止）。</li>
+      <li>値は GB（1GB = 1024<sup>3</sup> バイト、エクスプローラー表示と同基準）、小数点以下2桁で表記する。</li>
+      <li>使用率 80% 以上を「警告」、90% 以上を「危険」と判定する。</li>
+    </ul>
+  </section>
+
+  <section id="s5">
+    <h2><span class="section-num">05</span>Phase 2: Excel運用日誌への転記<span class="pill pill-warn" style="margin-left:10px;">新規</span></h2>
+    <p>対象共有フォルダ上の日次 Excel ブックを前日ファイルからコピーして当日ファイルを作成し、日付と容量データを更新して保存する。</p>
+
+    <h3>5.1 対象フォルダの特定</h3>
+    <span class="path">\\gmsv0002\006情シスs\04.共通管理\00.システム運用日誌\{YYYY}年度\{YYYYMM}</span>
+    <p><code>{YYYY}年度</code>・<code>{YYYYMM}</code> は実行日時点の年度・年月フォルダ（常に最新の月フォルダ）を指す。年度の切り替わり（決算期）ルールは既存フォルダ命名慣行に従う。</p>
+
+    <h3>5.2 前日ファイルの存在確認</h3>
+    <span class="path">システム運用日誌_{YYYYMMDD}.xlsm  （{YYYYMMDD} は実行日の前日日付）</span>
+    <p>上記フォルダ内に前日ファイルが存在することを確認する。<strong>存在しない場合は Phase 2 を中断し、BLOCKED として Phase 3 のレポートに記録する。</strong></p>
+
+    <h3>5.3 当日ファイルの作成</h3>
+    <p>前日ファイルをコピーし、当日日付のファイル名にリネームして同フォルダに保存する（コピー元は前日ファイルそのものであり、シート「サーバー管理日誌(統合)」を含むブック全体を複製する）。</p>
+
+    <h3>5.4 シート「MENU」の更新</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>セル</th><th>内容</th><th>処理</th></tr></thead>
+        <tbody>
+          <tr><td class="mono center">D10</td><td>日付（実行日の前日）</td><td>前日日付になっているか確認。ずれていれば <code>MM/DD</code> 形式で前日日付に修正する。</td></tr>
+          <tr><td class="mono center">E10</td><td>データ当日の日付</td><td>D10 の修正が正しく反映されたことを確認したうえで、データ当日（実行日）の日付になっているか確認する。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>5.5 シート「サーバー管理日誌(統合)」の更新</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>列</th><th>処理</th></tr></thead>
+        <tbody>
+          <tr><td><strong>容量（全容量）</strong></td><td>既存値を確認する（通常は変化しない想定。実測値と差異があれば警告として記録し、値そのものは上書きしない）。</td></tr>
+          <tr><td><strong>空き（空き容量）</strong></td><td>既存データを削除し、Phase 1 で取得した最新の空き容量を入力する。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>各機器・各ドライブと、シート上の行／列の対応関係は現物ブックのレイアウトに基づく。実装前に現物ファイルで確定する必要がある（<a href="#s9">9章 要確認事項</a> 4番）。</p>
+
+    <h3>5.6 保存</h3>
+    <p>更新後、当日ファイルを上書き保存して Excel を終了する。前日ファイルは削除せずそのまま残す。</p>
+  </section>
+
+  <section id="s6">
+    <h2><span class="section-num">06</span>Phase 3: 最終HTMLレポート</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>項目</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>出力先</td><td>スクリプトのルートフォルダ直下（<code>C:\temp\Server-Disk-Management</code>）</td></tr>
+          <tr><td>ファイル名</td><td class="mono">Disk-Management-{YYYYMMDDHHMM}.HTML</td></tr>
+          <tr><td>形式</td><td>表形式 HTML（既存の出力デザインを継続）</td></tr>
+          <tr><td>拡張内容</td><td>Phase 1 の機器別・ドライブ別容量表に加え、Phase 2 の各手順（フォルダ特定／前日ファイル確認／コピー／MENU更新／容量転記／保存）の結果を <span class="pill pill-ok">PASS</span> / <span class="pill pill-crit">FAIL</span> / <span class="pill pill-ng">BLOCKED</span> / <span class="pill pill-warn">NOT RUN</span> で追記する。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="s7">
+    <h2><span class="section-num">07</span>実行環境・前提条件</h2>
+    <ul>
+      <li><strong>起動:</strong> <code>Disk-Management.bat</code> を管理者権限で実行（未昇格なら UAC で自動昇格）。</li>
+      <li><strong>本体:</strong> <code>Disk-Management.ps1</code> を Windows PowerShell 5.1、<code>-ExecutionPolicy Bypass</code> で実行。コメント等は英語表記可。</li>
+      <li><strong>Excel操作:</strong> 実行端末にインストール済みの Microsoft Excel を COM オートメーション（<code>Excel.Application</code>）で操作する前提。</li>
+      <li><strong>ネットワーク:</strong> 対象9台への RPC(WMI)／WinRM 到達性に加え、<code>\\gmsv0002\006情シスs\...</code> 共有フォルダへの読み書き権限が必要。</li>
+      <li><strong>資格情報の保管:</strong> 認証情報はスクリプト内に平文で保持するため、フォルダのアクセス権限を運用担当者に限定する（既存方針を継続）。</li>
+    </ul>
+  </section>
+
+  <section id="s8">
+    <h2><span class="section-num">08</span>エラーハンドリング方針</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>状態</th><th>条件</th><th>対応</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill pill-ng">導通NG</span></td><td>ping 応答なし</td><td>容量取得は継続して試行し、結果を記録する。</td></tr>
+          <tr><td><span class="pill pill-crit">認証エラー</span></td><td>アクセス拒否／パスワード誤り／ロックアウト</td><td>別経路(WinRM)への再試行を行わない。ロックアウト防止を最優先する。</td></tr>
+          <tr><td><span class="pill pill-crit">取得失敗</span></td><td>上記以外の通信・WMIエラー</td><td>エラー内容を備考に記録する。</td></tr>
+          <tr><td><span class="pill pill-ng">ドライブ未検出</span></td><td>対象ドライブレターが存在しない</td><td>「ドライブ未検出」として記録する。</td></tr>
+          <tr><td><span class="pill pill-ng">BLOCKED (Phase2)</span></td><td>共有フォルダに前日ファイルが存在しない</td><td>Phase 2 を中断し BLOCKED として記録。Phase 1 の結果は通常通り出力する。</td></tr>
+          <tr><td><span class="pill pill-crit">FAIL (Phase2)</span></td><td>Excel 保存失敗（ファイルロック中・排他制御など）</td><td>再試行後、失敗時は FAIL として記録し、後続機器の記録・Phase 3 出力は継続する。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="s9">
+    <h2><span class="section-num">09</span>要確認事項</h2>
+    <p>以下は指示内容だけでは一意に確定できない、または現物確認が必要な点。実装着手前にユーザーへ確認する。</p>
+    <div class="qa-list">
+      <div class="qa-item">
+        <div class="q"><span class="qtag">Q1</span>アカウント名の表記</div>
+        <div class="a">指示原文は <code>adminstrator</code>（i 抜け）だが、既存 <code>Disk-Management.ps1</code> の実績あるアカウント名は正しいスペルの <code>administrator</code>。意図的な別アカウント名か、入力上のタイプミスか。特段の指定がなければ実績のある <code>administrator</code> を採用する想定。</div>
+      </div>
+      <div class="qa-item">
+        <div class="q"><span class="qtag">Q2</span>MAGNET側ユーザー名 <code>1\administrator</code> の意味</div>
+        <div class="a">先頭の <code>1</code> がドメイン名／コンピューター名として妥当か。ローカルアカウントを指す場合、通常は対象機器のコンピューター名または <code>.</code>（ローカルを表す記号）を使う。</div>
+      </div>
+      <div class="qa-item">
+        <div class="q"><span class="qtag">Q3</span>「サーバー管理日誌(統合)をコピペして最新ファイル名とする」の対象</div>
+        <div class="a">本仕様書は「前日ファイル（<code>システム運用日誌_YYYYMMDD.xlsm</code>）自体をコピーし、当日日付にリネームする」と解釈した。別途「サーバー管理日誌(統合).xlsm」という名前の専用テンプレートファイルが存在する場合は手順を差し替える必要がある。</div>
+      </div>
+      <div class="qa-item">
+        <div class="q"><span class="qtag">Q4</span>シート「サーバー管理日誌(統合)」の実セルレイアウト</div>
+        <div class="a">機器名・ドライブ・容量・空き容量が、シート上のどの行／列に対応するかは現物ブックが手元にないため未確定。実装前に現物ファイルでレイアウトを確認する必要がある。</div>
+      </div>
+      <div class="qa-item">
+        <div class="q"><span class="qtag">Q5</span>「容量（全容量）」列の扱い</div>
+        <div class="a">「確認したうえで入力」という指示のため、本仕様書では既存値の確認のみ（上書きしない）とした。実測値と食い違った場合に上書きすべきかどうかを確認したい。</div>
+      </div>
+      <div class="qa-item">
+        <div class="q"><span class="qtag">Q6</span>前日ファイルの扱い</div>
+        <div class="a">当日ファイル作成後、前日ファイルは削除せずそのまま残す想定でよいか。</div>
+      </div>
+      <div class="qa-item">
+        <div class="q"><span class="qtag">Q7</span>実行端末の Excel 有無</div>
+        <div class="a">Phase 2 は Excel の COM オートメーションを前提とする。本スクリプトを実行する端末に Microsoft Excel がインストールされている前提でよいか。</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="s10">
+    <h2><span class="section-num">10</span>ファイル構成</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>ファイル</th><th>役割</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">Disk-Management.bat</td><td>起動用バッチ。管理者権限へ自動昇格し、<code>ExecutionPolicy Bypass</code> で PowerShell スクリプトを実行する。（既存・変更なし）</td></tr>
+          <tr><td class="mono">Disk-Management.ps1</td><td>本体。Phase 1（既存）に加え、Phase 2（Excel転記）を追加実装する。</td></tr>
+          <tr><td class="mono">Disk-Management-{YYYYMMDDHHMM}.HTML</td><td>Phase 3 の実行結果（ルートフォルダ直下に作成）。</td></tr>
+          <tr><td class="mono">README.md</td><td>利用手順（Phase 2 追加後に更新）。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <span>ディスク容量管理運用表 仕様書 &middot; Server-Disk-Management</span>
+    <span>本ドキュメントは実装前のレビュー用ドラフトです</span>
+  </footer>
+
+</div>

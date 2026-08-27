@@ -1,0 +1,16 @@
+# 実行結果 HTML (実際の社内サーバー名・IPアドレス・容量データを含むため。ルート直下のみ対象、spec/ 配下の仕様書は除外しない)
+/Disk-Management-*.HTML
+/Disk-Management-*.html
+
+# 動作確認用フォルダ (疑似共有・実データのコピー・検証ログなどを含む)
+test/
+
+# Excel の一時ファイル・実データブック
+~$*.xlsm
+~$*.xlsx
+*.xlsm
+*.xlsx
+
+# OS 生成物
+Thumbs.db
+.DS_Store
