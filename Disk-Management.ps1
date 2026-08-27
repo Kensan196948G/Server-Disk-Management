@@ -258,14 +258,23 @@ function Invoke-OperationLogUpdate {
         Notes            = @()
     }
 
-    $prevDate    = $TodayDate.AddDays(-1)
-    $fiscalYear  = Get-JapaneseFiscalYear -Date $TodayDate
-    $monthFolder = '{0:yyyyMM}' -f $TodayDate
-    $folder      = Join-Path $ShareRoot ('{0}年度\{1}' -f $fiscalYear, $monthFolder)
+    # 前日ファイルと当日ファイルは、月初・年度初をまたぐと別々の年度/月フォルダに属することがあるため、
+    # それぞれの日付を基準にフォルダを個別に計算する (同じ TodayDate 基準で両方を求めると、
+    # 月の1日に実行した際に前日ファイルを新しい月のフォルダから探してしまい BLOCKED になる)。
+    $prevDate = $TodayDate.AddDays(-1)
+
+    $prevFiscalYear  = Get-JapaneseFiscalYear -Date $prevDate
+    $prevMonthFolder = '{0:yyyyMM}' -f $prevDate
+    $prevFolder      = Join-Path $ShareRoot ('{0}年度\{1}' -f $prevFiscalYear, $prevMonthFolder)
+
+    $todayFiscalYear  = Get-JapaneseFiscalYear -Date $TodayDate
+    $todayMonthFolder = '{0:yyyyMM}' -f $TodayDate
+    $todayFolder      = Join-Path $ShareRoot ('{0}年度\{1}' -f $todayFiscalYear, $todayMonthFolder)
+
     $prevFileName  = 'システム運用日誌_{0:yyyyMMdd}.xlsm' -f $prevDate
     $todayFileName = 'システム運用日誌_{0:yyyyMMdd}.xlsm' -f $TodayDate
-    $prevFile  = Join-Path $folder $prevFileName
-    $todayFile = Join-Path $folder $todayFileName
+    $prevFile  = Join-Path $prevFolder $prevFileName
+    $todayFile = Join-Path $todayFolder $todayFileName
 
     $mapped = $false
     $excel  = $null
@@ -279,10 +288,22 @@ function Invoke-OperationLogUpdate {
             $mapped = $true
         }
 
-        if (-not (Test-Path -LiteralPath $folder)) {
+        if (-not (Test-Path -LiteralPath $prevFolder)) {
             $phase2.FolderResolved = 'FAIL'
-            $phase2.Notes += "対象フォルダが見つかりません: $folder"
+            $phase2.Notes += "前日ファイルの対象フォルダが見つかりません: $prevFolder"
             return $phase2
+        }
+        if (-not (Test-Path -LiteralPath $todayFolder)) {
+            # 月初・年度初で当日分の月フォルダがまだ存在しない場合は新規作成する。
+            try {
+                New-Item -ItemType Directory -Path $todayFolder -Force -ErrorAction Stop | Out-Null
+                $phase2.Notes += "当日分の月フォルダを新規作成した: $todayFolder"
+            }
+            catch {
+                $phase2.FolderResolved = 'FAIL'
+                $phase2.Notes += ("当日分の月フォルダを作成できません: {0} ({1})" -f $todayFolder, $_.Exception.Message)
+                return $phase2
+            }
         }
         $phase2.FolderResolved = 'PASS'
 
