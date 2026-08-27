@@ -67,16 +67,19 @@ if (-not (Get-Command Get-Credential -ErrorAction SilentlyContinue)) {
 
 # 認証グループ。機器ごとに異なる資格情報を使うため、Targets の CredGroup で参照する。
 # パスワードはスクリプトに保存せず、実行の都度 Get-Credential で入力する (実行端末が
-# AD ドメインに参加していることが前提)。UserName は入力の手間を減らすための初期値。
+# AD ドメインに参加していることが前提)。UserName は入力の手間を減らすための初期値であり、
+# ダイアログ上で誰でも書き換えて別のユーザー名・パスワードを入力できる。
 #   GroupA   : 9台共通のディスク容量取得 (WMI/DCOM) に使う (VMSV3001 / GMSV0001 / 0002 / 0006 / 0008 / 0009 / 0011 / 0012)
-#              GMSV0002 専用アカウント (MK0623 相当) は WMI/DCOM 権限を持たないため、容量取得には使わない。
+#              運用担当者全員が同じ共通アカウントを使う想定のため、初期値を固定表示する。
 #   GMSV0002 : GMSV0002 上の共有フォルダ (Excel 運用日誌) への接続専用。MIRAI ドメインに登録された
-#              個別アカウントでのみログインする、というユーザー指定に基づき Phase 2 の SMB マッピングで使う。
+#              「実行者本人の個別アカウント」でログインする、というユーザー指定のため、
+#              特定個人名を初期値にせず、都度その場でユーザー名から入力してもらう (UserName を空にする)。
 #   MAGNET   : MAGNET.mirai.local 専用。過去にロックアウト事故があるため、
 #              このグループの認証エラー時は絶対に別グループへの読み替えや再試行を行わない。
+#              運用担当者全員が同じ共通アカウントを使う想定のため、初期値を固定表示する。
 $CredentialGroups = [ordered]@{
     GroupA   = @{ UserName = 'MIRAI\administrator'; Prompt = 'グループA共通アカウント (VMSV3001 / GMSV0001 / 0002 / 0006 / 0008 / 0009 / 0011 / 0012 の容量取得用)' }
-    GMSV0002 = @{ UserName = 'MIRAI\MK0623';         Prompt = 'GMSV0002 共有フォルダ (運用日誌 Excel) 接続専用アカウント' }
+    GMSV0002 = @{ UserName = '';                     Prompt = 'GMSV0002 共有フォルダ (運用日誌 Excel) 接続用。ご自身の MIRAI ドメインアカウントを入力してください (例: MIRAI\あなたのユーザー名)' }
     MAGNET   = @{ UserName = '1\administrator';      Prompt = 'MAGNET.mirai.local 専用アカウント (認証エラー時は再試行しません)' }
 }
 
