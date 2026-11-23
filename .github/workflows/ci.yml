@@ -1,0 +1,51 @@
+# 提案: Server-Disk-Management の最小 CI
+#
+# 根拠（2026-11-23 実測）:
+#   languages = HTML 49281 B / PowerShell 44613 B / Batchfile 1688 B
+#   ルート     = Disk-Management.ps1, Disk-Management.bat, README.md, spec/
+#   テスト無し。package.json / pyproject.toml / go.mod などのマニフェストも無い
+#
+# 方針: テストが無い repo なので、構文検査のみを最小 CI とする。
+#
+# 採用コマンド（実在を確認済み）:
+#   PowerShell の AST パーサ [System.Management.Automation.Language.Parser]::ParseFile
+#     … 追加モジュール不要（PSScriptAnalyzer を入れない）。ubuntu-latest の pwsh で動く
+#   Batchfile は GitHub Actions のランナーで静的検査する手段が無いため対象外
+#
+# 将来: テストを足したら、この job に step を追加する（job 名 ci は変えない＝必須チェック名を保つ）。
+
+name: ci
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PowerShell 構文検査
+        shell: pwsh
+        run: |
+          $failed = $false
+          $count = 0
+          Get-ChildItem -Path . -Recurse -Filter *.ps1 -File | ForEach-Object {
+            $file = $_
+            $count++
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) {
+              $failed = $true
+              foreach ($e in $errors) {
+                $line = $e.Extent.StartLineNumber
+                Write-Host "::error file=$($file.Name),line=$line::$($e.Message)"
+              }
+            }
+          }
+          Write-Host "検査した .ps1: $count 件"
+          if ($failed) { exit 1 }
